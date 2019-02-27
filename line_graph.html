@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+
+
+    <link rel="stylesheet" href="css/dc.css" type="text/css" />
+    <link rel="stylesheet" href="css/style.css" type="text/css" />
+
+    <script type="text/javascript" src="js/d3.min.js"></script>
+    <script type="text/javascript" src="js/crossfilter.min.js"></script>
+    <script type="text/javascript" src="js/dc.js"></script>
+    <script type="text/javascript" src="js/queue.min.js"></script>
+
+</head>
+
+<body>
+
+    <div>
+        <h3>Total Spend Per Month</h3>
+        <div id="spend-per-month"></div>
+    </div>
+
+
+
+
+    <script>
+        //Using external data//
+
+        //we use queue function to delay the call of the function until all the data is ready
+        queue()
+            .defer(d3.json, "data/transactions.json")
+            .await(makeGraphs);
+
+        function makeGraphs(error, transactionsData) {
+            // we can put exception handling if the data fails to load but for this case we asume the data will load
+
+            var ndx = crossfilter(transactionsData);
+
+           
+            var parseDate = d3.time.format("%d/%m/%Y").parse;
+            transactionsData.forEach(function(d) {
+                d.date = parseDate(d.date);
+            })
+
+            var date_dim = ndx.dimension(dc.pluck("date"));
+            var total_spend_per_month = date_dim.group().reduceSum(dc.pluck('spend'));
+
+            var minDate = date_dim.bottom(1)[0].date;
+            var maxDate = date_dim.top(1)[0].date;
+
+
+            dc.lineChart("#spend-per-month")
+                .height(300) //breading space around pie chart, dont confuse with diameter
+                .width(1000)
+                .margins({ top: 10, right: 50, bottom: 40, left: 50 })
+                .dimension(date_dim)
+                .group(total_spend_per_month)
+                .transitionDuration(500)
+                .x(d3.time.scale().domain([minDate, maxDate]))
+                .xAxisLabel("Month")
+                .yAxis().ticks(4);
+
+            dc.renderAll();
+        }
+    </script>
+
+
+</body>
+
+</html>

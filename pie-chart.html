@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+
+
+    <link rel="stylesheet" href="css/dc.css" type="text/css" />
+    <link rel="stylesheet" href="css/style.css" type="text/css" />
+
+    <script type="text/javascript" src="js/d3.min.js"></script>
+    <script type="text/javascript" src="js/crossfilter.min.js"></script>
+    <script type="text/javascript" src="js/dc.js"></script>
+    <script type="text/javascript" src="js/queue.min.js"></script>
+
+</head>
+
+<body>
+
+    <div>
+        <h3>Total Spend Per Person</h3>
+        <div id="spend-per-person"></div>
+    </div>
+    <div>
+        <h3>Total Spend Per State</h3>
+        <div id="spend-per-state"></div>
+    </div>
+    <div>
+        <h3>Total Spend Per Store</h3>
+        <div id="spend-per-store"></div>
+    </div>
+
+
+
+    <script>
+        //Using external data//
+
+        //we use queue function to delay the call of the function until all the data is ready
+        queue()
+            .defer(d3.json, "data/transactions.json")
+            .await(makeGraphs);
+
+        function makeGraphs(error, transactionsData) {
+            // we can put exception handling if the data fails to load but for this case we asume the data will load
+
+            var ndx = crossfilter(transactionsData);
+
+            var name_dim = ndx.dimension(dc.pluck('name'));
+            var total_spend_per_person = name_dim.group().reduceSum(dc.pluck('spend'));
+
+            dc.pieChart("#spend-per-person")
+                .height(200) //breading space around pie chart, dont confuse with diameter
+                .radius(90)
+                .dimension(name_dim)
+                .group(total_spend_per_person)
+                .transitionDuration(1500);
+
+            var store_dim = ndx.dimension(dc.pluck('store'));
+            var total_spend_per_store = store_dim.group().reduceSum(dc.pluck('spend'));
+
+            dc.pieChart("#spend-per-store")
+                .height(200) //breading space around pie chart, dont confuse with diameter
+                .radius(90)
+                .dimension(store_dim)
+                .group(total_spend_per_store)
+                .transitionDuration(1500);
+
+
+            var state_dim = ndx.dimension(dc.pluck('state'));
+            var total_spend_per_state = state_dim.group().reduceSum(dc.pluck('spend'));
+
+            dc.pieChart("#spend-per-state")
+                .height(200) //breading space around pie chart, dont confuse with diameter
+                .radius(90)
+                .dimension(state_dim)
+                .group(total_spend_per_state)
+                .transitionDuration(1500);
+
+            dc.renderAll();
+        }
+    </script>
+
+
+</body>
+
+</html>

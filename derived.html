@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+
+
+    <link rel="stylesheet" href="css/dc.css" type="text/css" />
+    <link rel="stylesheet" href="css/style.css" type="text/css" />
+
+    <script type="text/javascript" src="js/d3.min.js"></script>
+    <script type="text/javascript" src="js/crossfilter.min.js"></script>
+    <script type="text/javascript" src="js/dc.js"></script>
+    <script type="text/javascript" src="js/queue.min.js"></script>
+
+</head>
+
+<body>
+
+    <div>
+        <h3>Total Spend Per Month</h3>
+        <div id="pie-chart"></div>
+    </div>
+
+
+
+
+    <script>
+        //Using external data//
+
+        //we use queue function to delay the call of the function until all the data is ready
+        queue()
+            .defer(d3.json, "data/transactions.json")
+            .await(makeGraphs);
+
+        function makeGraphs(error, transactionsData) {
+            // we can put exception handling if the data fails to load but for this case we asume the data will load
+
+            var ndx = crossfilter(transactionsData);
+
+            var size_dimension = ndx.dimension(function(d){
+                if(d.spend>200)
+                return "Big";
+                else
+                return "Small"
+            });
+            
+            var size_group = size_dimension.group();
+            
+           
+            
+            console.log(size_group.all());
+            
+         dc.pieChart('#pie-chart')
+                .height(400)
+                .radius(90)
+                .dimension(size_dimension)
+                .group(size_group)
+                
+         dc.renderAll();
+        }
+    </script>
+
+
+</body>
+
+</html>

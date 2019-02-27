@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+
+
+    <link rel="stylesheet" href="css/dc.css" type="text/css" />
+    <link rel="stylesheet" href="css/style.css" type="text/css" />
+
+    <script type="text/javascript" src="js/d3.min.js"></script>
+    <script type="text/javascript" src="js/crossfilter.min.js"></script>
+    <script type="text/javascript" src="js/dc.js"></script>
+    <script type="text/javascript" src="js/queue.min.js"></script>
+
+</head>
+
+<body>
+
+    <div>
+        <h3>Total Spend Per Person</h3>
+        <div id="spend-per-person"></div>
+    </div>
+    
+
+
+
+    <script>
+        //Using external data//
+
+        //we use queue function to delay the call of the function until all the data is ready
+        queue()
+            .defer(d3.json, "data/transactions.json")
+            .await(makeGraphs);
+
+        function makeGraphs(error, transactionsData) {
+            // we can put exception handling if the data fails to load but for this case we asume the data will load
+
+            var ndx = crossfilter(transactionsData);
+
+            var name_dim = ndx.dimension(dc.pluck('name'));
+            //var total_spend_per_person = name_dim.group().reduceSum(dc.pluck('spend'));
+
+            //to create an average we replace the reduceSum() function by reduce() function and we will modify the parameter of that reduce() function by adding what are called anonymous functions
+
+
+            //var total_spend_per_person = name_dim.group().reduce(adder, remover, initialiser)
+
+            var average_spend_per_person = name_dim.group().reduce(
+
+                //Add a data entry
+                //p and v by convention, p will keep track of the changes and v will be input values from the actual values from the dataset that will affect the values of p
+
+                //inline function adder
+                function(p, v) {
+                    p.count++;
+                    p.total += v.spend;
+                    p.average = p.total / p.count;
+                    return p;
+                },
+
+                //inline function remover
+
+                // Remov ethe data entry
+                function(p, v) {
+                    p.count--;
+                    if (p.count == 0) {
+                        p.total = 0;
+                        p.average = 0;
+                    }
+                    else {
+                        p.total -= v.spend
+                        p.average = p.total / p.count;
+                    }
+                    return p;
+                },
+
+                //inline function initialiser
+
+                //Initialise the Reducer
+                function() {
+                    return { count: 0, total: 0, average: 0 }
+                }
+            );
+
+            console.log(average_spend_per_person.all());
+
+            var average_chart = dc.barChart("#spend-per-person")
+            average_chart
+                .width(500)
+                .height(300)
+                .dimension(name_dim)
+                .group(average_spend_per_person)
+                .valueAccessor(function(d){
+                    return d.value.average;
+                })
+                .transitionDuration(500)
+                .x(d3.scale.ordinal()) //ordinal because they are names, categories
+                .xUnits(dc.units.ordinal)
+                .xAxisLabel("Person")
+                .yAxis().ticks(4);
+
+            dc.renderAll()
+        }
+    </script>
+
+
+</body>
+
+</html>
