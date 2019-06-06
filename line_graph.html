@@ -22,10 +22,16 @@
 <body>
 
     <div>
-        <h3>Total Spend Per Month</h3>
-        <div id="spend-per-month"></div>
-    </div>
 
+        <h3>Select Month</h3>
+        <div id="selectMonth"></div>
+        <br><br><br>
+        <h3>Total Spend Per Month</h3>
+        <div id="chart"></div>
+         <h3>Test</h3>
+        <div id="test"></div>
+        
+    </div>
 
 
 
@@ -34,39 +40,106 @@
 
         //we use queue function to delay the call of the function until all the data is ready
         queue()
-            .defer(d3.json, "data/transactions.json")
+            .defer(d3.csv, "data/Data.csv")
             .await(makeGraphs);
 
-        function makeGraphs(error, transactionsData) {
+        function makeGraphs(error, Data) {
             // we can put exception handling if the data fails to load but for this case we asume the data will load
 
-            var ndx = crossfilter(transactionsData);
+            var ndx = crossfilter(Data);
 
-           
-            var parseDate = d3.time.format("%d/%m/%Y").parse;
-            transactionsData.forEach(function(d) {
-                d.date = parseDate(d.date);
+            var dimMonth = ndx.dimension(dc.pluck('month'));
+            var groupMonth = dimMonth.group();
+
+            dc.selectMenu('#selectMonth')
+                .dimension(dimMonth)
+                .group(groupMonth)
+                .title(function(d) {
+                    return d.key;
+                })
+
+            /*
+
+            https://dc-js.github.io/dc.js/docs/html/dc.selectMenu.html#toc1__anchor
+
+            // create a select menu under #select-container using the default global chart group
+            var select = dc.selectMenu('#select-container')
+               .dimension(states)
+               .group(stateGroup);
+            // the option text can be set via the title() function
+            // by default the option text is '`key`: `value`'
+            select.title(function (d){
+            return 'STATE: ' + d.key;
             })
 
-            var date_dim = ndx.dimension(dc.pluck("date"));
-            var total_spend_per_month = date_dim.group().reduceSum(dc.pluck('spend'));
 
-            var minDate = date_dim.bottom(1)[0].date;
-            var maxDate = date_dim.top(1)[0].date;
+            */
+            var dimCity = ndx.dimension(dc.pluck('city'));
+            var WeatherByCity = dimCity.group().reduceSum(dc.pluck('hostelNight'));  
+            
+            var date_night = ndx.dimension(dc.pluck('hostelNight'));
+            
+            var minNight = date_night.bottom(1)[0].date;
+            var maxNight = date_night.top(1)[0].date;
 
+            
+            
 
-            dc.lineChart("#spend-per-month")
-                .height(300) //breading space around pie chart, dont confuse with diameter
-                .width(1000)
-                .margins({ top: 10, right: 50, bottom: 40, left: 50 })
-                .dimension(date_dim)
-                .group(total_spend_per_month)
+            dc.barChart("#chart")
+                .width(600)
+                .height(200)
+                .margins({ top: 10, right: 50, bottom: 30, left: 50 })
+                .dimension(dimCity)
+                .group(WeatherByCity)
                 .transitionDuration(500)
-                .x(d3.time.scale().domain([minDate, maxDate]))
-                .xAxisLabel("Month")
+                .x(d3.scale.ordinal()) //ordinal because they are names
+                .y(d3.time.linear().domain([minNight,maxNight]))
+                .xUnits(dc.units.ordinal)
+                .xAxisLabel("Cities")
                 .yAxis().ticks(4);
+                
+                
+                
+                
+                
+                
+            
+           
+            
+            console.log(spend_group.all());
+            
+            var spend_chart = dc.scatterPlot('#scatter-plot');
+            spend_chart
+                .width(700)
+                .height(400)
+                .x(d3.time.scale().domain([minDate,maxDate]))
+                
+                
+                
+                
+
+
+            var city_dim = ndx.dimension(dc.pluck('city'));
+            var total_spend_per_person = city_dim.group().reduceSum(dc.pluck('totalCost'));
+
+            dc.pieChart("#test")
+                .height(200) //breading space around pie chart, dont confuse with diameter
+                .radius(90)
+                .dimension(city_dim)
+                .group(total_spend_per_person)
+                .transitionDuration(1500);
+
+            
+            
 
             dc.renderAll();
+
+
+
+
+
+
+            dc.renderAll()
         }
     </script>
 
